@@ -41,18 +41,20 @@ architecture arch of project_reti_logiche is
     end component;
     component close port(
         reset, clock: in std_logic;
-        done, dec: in std_logic;
+        done, done2, dec: in std_logic;
         dem1, memory: in std_logic_vector (7 downto 0);
         output: out std_logic_vector (7 downto 0)
     );
     end component;
-    component flipflop port(
-        d: in std_logic;
+    component doneMachine port(
         reset, clock: in std_logic;
-        q: out std_logic
+        input: in std_logic;
+        done1, done2, done: out std_logic;
+        finish: out std_logic
     );
     end component;
-    signal done, preDone, finish, inputInit: std_logic;
+    signal done, done1, done2, finish: std_logic;
+    signal inputInit: std_logic;
     signal inputDecoder: std_logic_vector (1 downto 0);
     signal inputClose0, inputClose1, inputClose2, inputClose3: std_logic_vector (7 downto 0);
     signal decClose0, decClose1, decClose2, decClose3: std_logic;
@@ -60,8 +62,16 @@ begin
     o_mem_we <= '0';
     o_mem_en <= i_start;
     o_done <= done;
-    done <= preDone and not i_start;
     inputInit <= i_w and i_start;
+    doneMach: doneMachine port map(
+        reset => i_rst,
+        clock => i_clk,
+        input => i_start,
+        done1 => done1,
+        done2 => done2,
+        done => done,
+        finish => finish
+    );
     initial: init port map(
         reset => i_rst,
         clock => i_clk,
@@ -90,6 +100,7 @@ begin
         reset => i_rst,
         clock => i_clk,
         done => done,
+        done2 => done2,
         dec => decClose0,
         dem1 => inputClose0,
         memory => i_mem_data,
@@ -99,6 +110,7 @@ begin
         reset => i_rst,
         clock => i_clk,
         done => done,
+        done2 => done2,
         dec => decClose1,
         dem1 => inputClose1,
         memory => i_mem_data,
@@ -108,6 +120,7 @@ begin
         reset => i_rst,
         clock => i_clk,
         done => done,
+        done2 => done2,
         dec => decClose2,
         dem1 => inputClose2,
         memory => i_mem_data,
@@ -117,25 +130,56 @@ begin
         reset => i_rst,
         clock => i_clk,
         done => done,
+        done2 => done2,
         dec => decClose3,
         dem1 => inputClose3,
         memory => i_mem_data,
         output => o_z3
     );
-    FFdone: flipflop port map(
-        d => i_start,
-        reset => i_rst,
-        clock => i_clk,
-        q => preDone
-    );
-    FFfinish: flipflop port map(
-        d => done,
-        reset => i_rst,
-        clock => i_clk,
-        q => finish
-    );
 end arch;
 
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+entity doneMachine is 
+    port(
+        reset, clock: in std_logic;
+        input: in std_logic;
+        done1, done2, done: out std_logic;
+        finish: out std_logic
+    );
+end doneMachine;
+architecture arch of doneMachine is
+    component flipflop port(
+        d: in std_logic;
+        reset, clock: in std_logic;
+        q: out std_logic
+    );
+    end component;
+    signal done1sign, done2sign, preDone1, preDone2: std_logic;
+    signal notClk: std_logic;
+begin
+    notClk <= not clock;
+    done1 <= done1sign;
+    done2 <= done2sign;
+    done <= done1sign or done2sign;
+    finish <= done2sign;
+    done1sign <= preDone1 and not input;
+    done2sign <= preDone2 and not preDone1;
+    FF1: flipflop port map(
+        d => input,
+        reset => reset,
+        clock => clock,
+        q => preDone1
+    );
+    FF2: flipflop port map(
+        d => preDone1,
+        reset => reset,
+        clock => notClk,
+        q => preDone2
+    );
+end arch;
+    
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -477,7 +521,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity close is 
     port(
         reset, clock: in std_logic;
-        done, dec: in std_logic;
+        done, done2, dec: in std_logic;
         dem1, memory: in std_logic_vector (7 downto 0);
         output: out std_logic_vector (7 downto 0)
     );
@@ -495,13 +539,14 @@ architecture arch of close is
         output: out std_logic_vector (7 downto 0)
     );
     end component;
-    signal enableReg8: std_logic;
+    signal enableReg8, selectMux: std_logic;
     signal superdone: std_logic_vector (7 downto 0);
     signal inputBmux1, outputMUX1: std_logic_vector (7 downto 0);
 begin
     enableReg8 <= (done and dec) or reset;
     superdone <= done & done & done & done & done & done & done & done;
     output <= superdone and outputMUX1;
+    selectMux <= dec and not done2;
     register8: reg8 port map(
         reset => reset,
         enable => enableReg8,
@@ -512,7 +557,7 @@ begin
     multiplexer1: mux1 port map(
         inputA => inputBmux1,
         inputB => memory,
-        selection => dec,
+        selection => selectMux,
         output => outputMUX1
     );
 end arch;
