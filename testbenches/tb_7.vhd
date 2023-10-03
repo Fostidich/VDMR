@@ -50,7 +50,7 @@ ARCHITECTURE projecttb OF project_tb IS
 				 OTHERS => "00000000"-- (OTHERS => '0')
                             );
 
-    COMPONENT project_reti_logiche IS
+    COMPONENT main_block IS
         PORT (
             i_clk : IN STD_LOGIC;
             i_rst : IN STD_LOGIC;
@@ -68,10 +68,10 @@ ARCHITECTURE projecttb OF project_tb IS
             o_mem_we : OUT STD_LOGIC;
             o_mem_en : OUT STD_LOGIC
         );
-    END COMPONENT project_reti_logiche;
+    END COMPONENT main_block;
 
 BEGIN
-    UUT : project_reti_logiche
+    UUT : main_block
     PORT MAP(
         i_clk => tb_clk,
         i_start => tb_start,
