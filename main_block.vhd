@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-entity project_reti_logiche is
+entity main_block is
     port(
         i_clk: in std_logic;
         i_rst: in std_logic;
@@ -18,8 +18,8 @@ entity project_reti_logiche is
         o_mem_we: out std_logic;
         o_mem_en: out std_logic
     ); 
-end project_reti_logiche;
-architecture arch of project_reti_logiche is
+end main_block;
+architecture arch of main_block is
     component init port(
         reset, clock: in std_logic;
         start, finish: in std_logic;
